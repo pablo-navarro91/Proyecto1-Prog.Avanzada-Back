@@ -79,16 +79,48 @@ export class GlobalExceptionFilter implements ExceptionFilter {
     
     this.logger.error('═══════════════════════════════════════════════════════');
 
+    // Extraer el mensaje útil para el cliente.
+    // Para HttpException, getResponse() contiene el cuerpo real de la excepción.
+    // El ValidationPipe genera { message: string[], error: string, statusCode: number }.
+    // Las excepciones manuales (ej: BadRequestException("texto")) generan { message: "texto", ... }
+    // o simplemente el string "texto" directamente.
+    // exception.message (getter de Error) solo devuelve el statusText ("Bad Request"),
+    // por eso se descarta en favor de getResponse().
+    let clientMessage: string | string[];
+
+    if (exception instanceof HttpException) {
+      const responseBody = exception.getResponse();
+
+      if (typeof responseBody === 'string') {
+        // throw new BadRequestException("texto directo")
+        clientMessage = responseBody;
+      } else if (
+        typeof responseBody === 'object' &&
+        responseBody !== null &&
+        'message' in responseBody
+      ) {
+        // ValidationPipe y la mayoría de excepciones HTTP estructuradas
+        // message puede ser string[] (ValidationPipe) o string (manual)
+        clientMessage = (responseBody as { message: string | string[] }).message;
+      } else {
+        // Fallback: usar el mensaje base de la excepción
+        clientMessage = exception.message;
+      }
+    } else {
+      // Errores no HTTP (errores de BD, bugs, etc.): nunca exponer detalles internos
+      clientMessage = 'Error interno del servidor.';
+    }
+
     // Respuesta al cliente
     const errorResponse = {
       statusCode: status,
       timestamp: new Date().toISOString(),
       path: request.url,
-      message: exception?.message || 'Internal Server Error',
-      ...(process.env.NODE_ENV === 'development' && { 
+      message: clientMessage,
+      ...(process.env.NODE_ENV === 'development' && {
         stack: exception?.stack,
-        details: exception?.response 
-      })
+        details: exception instanceof HttpException ? exception.getResponse() : undefined,
+      }),
     };
 
     response.status(status).json(errorResponse);
