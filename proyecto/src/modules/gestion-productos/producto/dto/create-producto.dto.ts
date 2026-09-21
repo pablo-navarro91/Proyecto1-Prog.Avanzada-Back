@@ -73,9 +73,16 @@ export class CreateProductoDto {
   @Transform(({ value }) => value === 'true' || value === true)
   envioGratis?: boolean;
 
-  @IsOptional()
-  @IsNumber()
-  costo?: number;
+  @IsNumber(
+    {},
+    {
+      message: ({ value }) =>
+        value === undefined || value === null
+          ? 'El costo es obligatorio'
+          : 'El costo debe ser numérico',
+    },
+  )
+  costo: number; 
 
   @IsBoolean()
   utilizaPack: boolean;

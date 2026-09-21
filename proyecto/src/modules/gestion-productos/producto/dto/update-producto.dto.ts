@@ -1,4 +1,4 @@
-import { PartialType } from '@nestjs/mapped-types';
+import { OmitType, PartialType } from '@nestjs/mapped-types';
 import { CreateProductoDto } from './create-producto.dto';
 import {
   IsNotEmpty,
@@ -6,10 +6,18 @@ import {
   IsString,
   MaxLength,
   Matches,
+  IsNumber,
+  ValidateIf,
 } from 'class-validator';
 import { Transform } from 'class-transformer';
 
-export class UpdateProductoDto extends PartialType(CreateProductoDto) {
+export class UpdateProductoDto extends PartialType(
+  OmitType(CreateProductoDto, ['costo'] as const),
+) {
+  @ValidateIf((_, value) => value !== undefined)
+  @IsNumber({}, { message: 'El costo debe ser numérico' })
+  costo?: number;
+
   @Transform(({ value }) => value.trim().toLowerCase())
   @IsString({ message: 'La denominación debe ser una cadena de texto.' }) // Valida que sea string
   @IsNotEmpty({ message: 'La denominación no puede estar vacía.' }) // Valida que no esté vacía

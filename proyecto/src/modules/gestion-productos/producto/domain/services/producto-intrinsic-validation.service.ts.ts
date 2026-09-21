@@ -3,6 +3,20 @@ import { Injectable, BadRequestException } from '@nestjs/common';
 
 @Injectable()
 export class ProductoIntrinsicValidationService {
+  validarCosto(costo: unknown): void {
+    if (costo === undefined || costo === null) {
+      throw new BadRequestException('El costo es obligatorio');
+    }
+
+    if (typeof costo !== 'number' || !Number.isFinite(costo)) {
+      throw new BadRequestException('El costo debe ser numérico');
+    }
+
+    if (costo <= 0) {
+      throw new BadRequestException('El costo debe ser mayor a 0');
+    }
+  }
+
   /**
    * Valida todos los datos intrínsecos del producto
    */

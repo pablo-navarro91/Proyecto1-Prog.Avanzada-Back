@@ -314,6 +314,8 @@ export class ProductoService {
    * @private
    */
   private async validarYPrepararCreacion(dto: CreateProductoDto) {
+    this.intrinsicValidationService.validarCosto(dto.costo);
+
     // Validar datos  (Domain - sin DB)
     this.intrinsicValidationService.validarDatosBasicos({
       denominacion: dto.denominacion,
@@ -412,6 +414,10 @@ export class ProductoService {
     const usuario = await this.usuarioValidator.validarUsuarioExiste(
       dto.usuarioUpdatedId,
     );
+
+    if (dto.costo !== undefined) {
+      this.intrinsicValidationService.validarCosto(dto.costo);
+    }
 
     return { marca, linea, usuario };
   }
